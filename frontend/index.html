@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Board</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef4fb;
+      --surface: #ffffff;
+      --surface-muted: #f7f9fd;
+      --surface-soft: rgba(255, 255, 255, 0.9);
+      --border: rgba(148, 163, 184, 0.24);
+      --text: #0f172a;
+      --muted: #5b7284;
+      --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+      --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.14);
+      --radius: 28px;
+      --radius-sm: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.1), transparent 18%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4fb 48%, #f8fbff 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .app-header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 28px 22px;
+    }
+
+    .app-header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 2.5vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.05em;
+    }
+
+    .app-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 55ch;
+    }
+
+    .task-controls {
+      max-width: 1200px;
+      margin: 0 auto 18px;
+      padding: 0 24px;
+    }
+
+    .filter-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .filter-control select {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .board {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 32px;
+    }
+
+    .board-column {
+      min-height: 280px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+      backdrop-filter: blur(14px);
+    }
+
+    .board-column:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    }
+
+    .board-column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
+
+    .board-column-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #17233d;
+    }
+
+    .board-column-count {
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .task-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      border-radius: 22px;
+      background: #ffffff;
+      border: 1px solid transparent;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(37, 99, 235, 0.18);
+      box-shadow: 0 22px 44px rgba(15, 23, 42, 0.1);
+    }
+
+    .task-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #111827;
+    }
+
+    .task-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .task-card-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .task-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .task-card-edit-btn {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #334155;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .task-card-edit-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(37, 99, 235, 0.35);
+      background: #f8fbff;
+    }
+
+    .task-card p {
+      margin: 0;
+      color: #475569;
+      font-size: 0.96rem;
+      line-height: 1.65;
+    }
+
+    .priority-pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #dbeafe;
+      color: #1d4ed8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .priority-pill.high {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .priority-pill.medium {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .priority-pill.low {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .loading-skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .skeleton-line {
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #e2e8f0 20%, #f8fafc 50%, #e2e8f0 80%);
+      background-size: 230% 100%;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .skeleton-line.short {
+      width: 55%;
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      padding: 22px;
+      border: 1px dashed #dbeafe;
+      border-radius: 22px;
+      background: rgba(59, 130, 246, 0.08);
+      color: #475569;
+      text-align: center;
+      font-size: 0.97rem;
+    }
+
+    .task-form {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      padding: 0 24px;
+    }
+
+    .task-form-card {
+      display: grid;
+      gap: 20px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form-field label {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea,
+    .task-form button {
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .task-form button {
+      border: none;
+      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+      color: white;
+      cursor: pointer;
+      min-width: 160px;
+      align-self: end;
+      border-radius: 18px;
+      padding: 15px 22px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18);
+    }
+
+    .task-form button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 36px rgba(37, 99, 235, 0.22);
+    }
+
+    .task-form button.secondary {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .form-status {
+      min-height: 1.2rem;
+      font-size: 0.96rem;
+      color: var(--muted);
+    }
+
+    .form-status.error {
+      color: #991b1b;
+    }
+
+    .form-status.success {
+      color: #166534;
+    }
+
+    .error-card {
+      padding: 16px 18px;
+      border: 1px solid #fecaca;
+      border-radius: 18px;
+      background: #fef2f2;
+      color: #991b1b;
+      box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.15);
+    }
+
+    .board-column.drag-over {
+      border-color: rgba(37, 99, 235, 0.45);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12), var(--shadow-soft);
+    }
+
+    .task-card.dragging {
+      opacity: 0.72;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      color: #1d4ed8;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .due-date-pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .overdue-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .theme-toggle {
+      width: 44px;
+      height: 44px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    @keyframes pulse {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .task-form button {
+        width: 100%;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-header {
+        padding: 24px 18px 16px;
+      }
+
+      .board {
+        padding: 0 18px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;">
+      <div>
+        <h1>Task Board</h1>
+        <p>Drag tasks between columns to update their status.</p>
+      </div>
+      <div class="header-controls">
+        <button id="theme-toggle" class="theme-toggle" aria-pressed="false" title="Toggle dark mode">
+          <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 4.5a1 1 0 0 1 1 1V7a1 1 0 0 1-2 0V5.5a1 1 0 0 1 1-1zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm7.5-5a1 1 0 0 1-1 1H17a1 1 0 0 1 0-2h1.5a1 1 0 0 1 1 1zM7 12a5 5 0 0 0 5 5v2a1 1 0 0 1-2 0v-2a5 5 0 0 0-3-4.58V12zM6.22 6.22a1 1 0 0 1 1.42 0L8.95 7.53a1 1 0 1 1-1.42 1.42L6.22 7.64a1 1 0 0 1 0-1.42zM17.05 16.47a1 1 0 0 1 1.42 0l1.31 1.31a1 1 0 0 1-1.42 1.42l-1.31-1.31a1 1 0 0 1 0-1.42zM4.5 12a1 1 0 0 1 1-1H7a1 1 0 0 1 0 2H5.5a1 1 0 0 1-1-1z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section class="task-form" aria-label="Create a task">
+    <form id="task-form" class="task-form-card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="title">Title</label>
+          <input id="title" name="title" type="text" placeholder="Add a task" required />
+        </div>
+        <div class="form-field">
+          <label for="priority">Priority</label>
+          <select id="priority" name="priority">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="ToDo" selected>To Do</option>
+            <option value="InProgress">In Progress</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="due-date">Due date</label>
+        <input id="due-date" name="due-date" type="date" />
+      </div>
+      <div class="form-field">
+  <label for="tags">Tags</label>
+  <input
+    id="tags"
+    name="tags"
+    type="text"
+    placeholder="e.g. school, programming, important"
+     autocomplete="off"
+  />
+  <small>Enter up to 5 tags, separated by commas.</small>
+</div>
+      <div class="form-actions">
+        <button type="submit" id="submit-button">Create task</button>
+        <button type="button" id="cancel-edit-button" class="secondary" hidden>Cancel</button>
+      </div>
+      <div class="form-field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="2" placeholder="What needs to be done?"></textarea>
+      </div>
+
+      <div id="form-status" class="form-status" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section class="task-controls" aria-label="Task visibility filter">
+    <label class="filter-control">
+      <span>Show</span>
+      <select id="task-filter">
+        <option value="all">All Tasks</option>
+        <option value="overdue">Overdue Tasks</option>
+      </select>
+    </label>
+  </section>
+
+  <main>
+    <section id="board" class="board" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+    const STATUSES = ["ToDo", "InProgress", "Done"];
+    const STATUS_LABELS = {
+      ToDo: "To Do",
+      InProgress: "In Progress",
+      Done: "Done"
+    };
+    const API_STATUS_VALUES = {
+      ToDo: "todo",
+      InProgress: "in_progress",
+      Done: "done"
+    };
+    const VALID_TRANSITIONS = {
+      ToDo: ["InProgress"],
+      InProgress: ["Done"],
+      Done: ["InProgress"]
+    };
+    const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
+
+    let tasks = [];
+    let boardState = "loading";
+    let errorMessage = "";
+    let formMessage = "Create a task to start testing the board.";
+    let formMessageType = "";
+    let editingTaskId = null;
+    let currentFilter = "all";
+
+    function normalizeStatus(status) {
+      const normalized = String(status || "").toLowerCase();
+      if (normalized === "todo") return "ToDo";
+      if (normalized === "in_progress" || normalized === "inprogress") return "InProgress";
+      if (normalized === "done") return "Done";
+      return "ToDo";
+    }
+
+    function normalizePriority(priority) {
+      const normalized = String(priority || "").toLowerCase();
+      if (normalized === "high") return "High";
+      if (normalized === "medium") return "Medium";
+      if (normalized === "low") return "Low";
+      return "Medium";
+    }
+
+    function formatDueDate(dueDate) {
+      if (!dueDate) return "";
+      const parsedDate = new Date(`${dueDate}T00:00:00`);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return dueDate;
+      }
+      return parsedDate.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function getTodayStart() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
+    }
+
+    function isTaskOverdue(task) {
+      if (!task?.due_date) return false;
+      if (task.status === "Done") return false;
+
+      const dueDate = new Date(`${task.due_date}T00:00:00`);
+      dueDate.setHours(0, 0, 0, 0);
+
+      return dueDate < getTodayStart();
+    }
+
+    function getVisibleTasks() {
+      return tasks.filter((task) => {
+        if (currentFilter === "overdue") {
+          return isTaskOverdue(task);
+        }
+        return true;
+      });
+    }
+
+    function showFormMessage(message, type = "") {
+      formMessage = message;
+      formMessageType = type;
+      const feedback = document.getElementById("form-status");
+      if (!feedback) return;
+      feedback.textContent = message;
+      feedback.className = `form-status ${type}`.trim();
+    }
+
+    function updateFormMode() {
+      const submitButton = document.getElementById("submit-button");
+      const cancelButton = document.getElementById("cancel-edit-button");
+      if (!submitButton || !cancelButton) return;
+
+      if (editingTaskId === null) {
+        submitButton.textContent = "Create task";
+        cancelButton.hidden = true;
+      } else {
+        submitButton.textContent = "Save changes";
+        cancelButton.hidden = false;
+      }
+    }
+
+    function resetForm() {
+      const form = document.getElementById("task-form");
+      if (form) {
+        form.reset();
+      }
+      document.getElementById("priority").value = "Medium";
+      document.getElementById("status").value = "ToDo";
+      document.getElementById("due-date").value = "";
+      editingTaskId = null;
+        updateFormMode();
+    }
+
+    function populateForm(task) {
+  document.getElementById("title").value = task.title || "";
+  document.getElementById("description").value = task.description || "";
+  document.getElementById("priority").value = normalizePriority(task.priority);
+  document.getElementById("status").value = task.status || "ToDo";
+  document.getElementById("due-date").value = task.due_date
+    ? String(task.due_date).slice(0, 10)
+    : "";
+
+  document.getElementById("tags").value = Array.isArray(task.tags)
+    ? task.tags.join(", ")
+    : "";
+
+  editingTaskId = task.id;
+  updateFormMode();
+}
+
+    
+
+    function canTransitionTo(currentStatus, targetStatus) {
+      return VALID_TRANSITIONS[currentStatus]?.includes(targetStatus) || false;
+    }
+
+    async function fetchTasks() {
+      boardState = "loading";
+      render();
+
+      try {
+        const response = await fetch(`${API_BASE}/tasks`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tasks: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        tasks = payload.map((task) => ({
+          ...task,
+          status: normalizeStatus(task.status),
+          priority: normalizePriority(task.priority)
+        }));
+        boardState = "ready";
+        errorMessage = "";
+      } catch (error) {
+        boardState = "error";
+        errorMessage = error.message || "Unable to load tasks.";
+      }
+
+      render();
+    }
+
+    function render() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+
+      if (boardState === "loading") {
+        const skeleton = document.createElement("div");
+        skeleton.className = "loading-skeleton";
+        skeleton.innerHTML = `
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        `;
+        board.appendChild(skeleton);
+        return;
+      }
+
+      if (boardState === "error") {
+        const errorCard = document.createElement("div");
+        errorCard.className = "error-card";
+        errorCard.textContent = errorMessage;
+        board.appendChild(errorCard);
+        return;
+      }
+
+      renderBoard(board);
+      const feedback = document.getElementById("form-status");
+      if (feedback) {
+        feedback.textContent = formMessage;
+        feedback.className = `form-status ${formMessageType}`.trim();
+      }
+    }
+
+    function renderBoard(board) {
+      const visibleTasks = getVisibleTasks();
+
+      const grouped = STATUSES.reduce((acc, status) => {
+        acc[status] = [];
+        return acc;
+      }, {});
+
+      visibleTasks.forEach((task) => {
+        if (grouped[task.status]) {
+          grouped[task.status].push(task);
+        }
+      });
+
+      STATUSES.forEach((status) => {
+        const column = document.createElement("section");
+        column.className = "board-column";
+        column.dataset.status = status;
+
+        column.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          column.classList.add("drag-over");
+        });
+
+        column.addEventListener("dragleave", () => {
+          column.classList.remove("drag-over");
+        });
+
+        column.addEventListener("drop", (event) => {
+          event.preventDefault();
+          column.classList.remove("drag-over");
+          const taskId = Number(event.dataTransfer?.getData("text/plain"));
+          if (!taskId) return;
+          moveTask(taskId, status);
+        });
+
+        const header = document.createElement("div");
+        header.className = "board-column-header";
+
+        const title = document.createElement("div");
+        title.className = "board-column-title";
+        title.textContent = STATUS_LABELS[status];
+
+        const count = document.createElement("span");
+        count.className = "board-column-count";
+        count.textContent = grouped[status].length;
+
+        header.appendChild(title);
+        header.appendChild(count);
+        column.appendChild(header);
+
+        const tasksForStatus = grouped[status].slice().sort((a, b) => {
+          const priorityDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+          if (priorityDiff !== 0) {
+            return priorityDiff;
+          }
+          return a.id - b.id;
+        });
+
+        if (tasksForStatus.length === 0) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty-state";
+          emptyState.textContent = "Drop tasks here";
+          column.appendChild(emptyState);
+        } else {
+          tasksForStatus.forEach((task) => {
+            const card = document.createElement("article");
+            card.className = "task-card";
+            card.draggable = true;
+            card.addEventListener("dragstart", (event) => {
+              card.classList.add("dragging");
+              event.dataTransfer?.setData("text/plain", String(task.id));
+              event.dataTransfer?.setData("application/task-id", String(task.id));
+            });
+            card.addEventListener("dragend", () => {
+              card.classList.remove("dragging");
+              column.classList.remove("drag-over");
+            });
+
+            const headerRow = document.createElement("div");
+            headerRow.className = "task-card-header";
+
+            const titleWrap = document.createElement("div");
+            titleWrap.className = "task-card-title-wrap";
+
+            const titleEl = document.createElement("h3");
+            titleEl.textContent = task.title;
+            titleWrap.appendChild(titleEl);
+
+            if (isTaskOverdue(task)) {
+              const badge = document.createElement("span");
+              badge.className = "overdue-badge";
+              badge.textContent = "🔴 Overdue";
+              titleWrap.appendChild(badge);
+            }
+
+            const actions = document.createElement("div");
+            actions.className = "task-card-actions";
+
+            const editButton = document.createElement("button");
+            editButton.className = "task-card-edit-btn";
+            editButton.type = "button";
+            editButton.textContent = "Edit";
+            editButton.addEventListener("click", (event) => {
+              event.stopPropagation();
+              populateForm(task);
+              showFormMessage(`Editing "${task.title}".`, "");
+              document.getElementById("title")?.focus();
+            });
+
+            actions.appendChild(editButton);
+            headerRow.appendChild(titleWrap);
+            headerRow.appendChild(actions);
+
+            const details = document.createElement("p");
+details.textContent = task.description || "No description provided.";
+
+const tagsContainer = document.createElement("div");
+tagsContainer.style.display = "flex";
+tagsContainer.style.flexWrap = "wrap";
+tagsContainer.style.gap = "8px";
+
+if (Array.isArray(task.tags) && task.tags.length > 0) {
+  task.tags.forEach((tag) => {
+    const tagPill = document.createElement("span");
+    tagPill.textContent = `#${tag}`;
+    tagPill.style.display = "inline-flex";
+    tagPill.style.alignItems = "center";
+    tagPill.style.padding = "6px 10px";
+    tagPill.style.borderRadius = "999px";
+    tagPill.style.background = "#eef2ff";
+    tagPill.style.color = "#4338ca";
+    tagPill.style.fontSize = "0.75rem";
+    tagPill.style.fontWeight = "700";
+
+    tagsContainer.appendChild(tagPill);
+  });
+}
+
+const dueDatePill = task.due_date
+              ? (() => {
+                  const pill = document.createElement("span");
+                  pill.className = "due-date-pill";
+                  pill.textContent = `Due ${formatDueDate(task.due_date)}`;
+                  return pill;
+                })()
+              : null;
+
+            const footer = document.createElement("div");
+            footer.style.display = "flex";
+            footer.style.justifyContent = "space-between";
+            footer.style.alignItems = "center";
+            footer.style.gap = "10px";
+
+            const priority = document.createElement("span");
+            priority.className = `priority-pill ${task.priority.toLowerCase()}`;
+            priority.textContent = task.priority;
+
+            const statusPill = document.createElement("span");
+            statusPill.className = "status-pill";
+            statusPill.textContent = STATUS_LABELS[task.status];
+
+            footer.appendChild(priority);
+            footer.appendChild(statusPill);
+
+           card.appendChild(headerRow);
+           card.appendChild(details);
+
+           if (tagsContainer.children.length > 0) {
+           card.appendChild(tagsContainer);
+           }
+
+          if (dueDatePill) {
+           card.appendChild(dueDatePill);
+           }
+            card.appendChild(footer);
+            column.appendChild(card);
+          });
+        }
+
+        board.appendChild(column);
+      });
+    }
+
+    async function createTask(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const priority = document.getElementById("priority").value;
+      const status = document.getElementById("status").value;
+      const dueDate = document.getElementById("due-date").value;
+      const tagsInput = document.getElementById("tags").value.trim();
+
+const tags = tagsInput
+  ? tagsInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0)
+  : [];
+
+  if (tags.length > 5) {
+  showFormMessage("You can add a maximum of 5 tags.", "error");
+  return;
+}
+
+      if (!title) {
+        showFormMessage("Please enter a title before creating a task.", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           title,
+           description: description || undefined,
+           priority: priority.toLowerCase(),
+           status: API_STATUS_VALUES[status],
+           due_date: dueDate || null,
+           tags
+})
+        });
+
+        if (!response.ok) {
+          const errorDetail = await response.json().catch(() => ({}));
+          throw new Error(errorDetail.detail || "Unable to create task.");
+        }
+
+        const createdTask = await response.json();
+        tasks = [{
+          ...createdTask,
+          status: normalizeStatus(createdTask.status),
+          priority: normalizePriority(createdTask.priority)
+        }, ...tasks];
+
+        resetForm();
+        showFormMessage(`Created "${createdTask.title}" in ${STATUS_LABELS[normalizeStatus(createdTask.status)]}.`, "success");
+        render();
+      } catch (error) {
+        showFormMessage(error.message || "Unable to create task.", "error");
+      }
+    }
+
+    async function saveTask(event) {
+      event.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const priority = document.getElementById("priority").value;
+      const status = document.getElementById("status").value;
+      const dueDate = document.getElementById("due-date").value;
+      const tagsInput = document.getElementById("tags").value.trim();
+
+     const tags = tagsInput
+     ? tagsInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0)
+  : [];
+      
+  if (tags.length > 5) {
+  showFormMessage("You can add a maximum of 5 tags.", "error");
+  return;
+}
+
+      if (!title) {
+        showFormMessage("Please enter a title before saving a task.", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/tasks/${editingTaskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+  title,
+  description: description || null,
+  priority: priority.toLowerCase(),
+  status: API_STATUS_VALUES[status],
+  due_date: dueDate || null,
+  tags
+})
+        });
+
+        if (!response.ok) {
+          const errorDetail = await response.json().catch(() => ({}));
+          throw new Error(errorDetail.detail || "Unable to update task.");
+        }
+
+        const updatedTask = await response.json();
+        tasks = tasks.map((item) => {
+          if (item.id === editingTaskId) {
+            return {
+              ...item,
+              ...updatedTask,
+              status: normalizeStatus(updatedTask.status),
+              priority: normalizePriority(updatedTask.priority)
+            };
+          }
+          return item;
+        });
+
+        resetForm();
+        showFormMessage(`Updated "${updatedTask.title}".`, "success");
+        await fetchTasks();
+      } catch (error) {
+        showFormMessage(error.message || "Unable to update task.", "error");
+      }
+    }
+
+    async function moveTask(taskId, targetStatus) {
+      const task = tasks.find((item) => item.id === taskId);
+      if (!task) return;
+
+      if (!canTransitionTo(task.status, targetStatus)) {
+        showFormMessage(`"${task.title}" can only move to the next status.`, "error");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: API_STATUS_VALUES[targetStatus] })
+        });
+
+        if (!response.ok) {
+          const errorDetail = await response.json().catch(() => ({}));
+          throw new Error(errorDetail.detail || "Unable to update task status.");
+        }
+
+        const updatedTask = await response.json();
+        tasks = tasks.map((item) => {
+          if (item.id === taskId) {
+            return {
+              ...item,
+              status: normalizeStatus(updatedTask.status),
+              priority: updatedTask.priority ? updatedTask.priority.charAt(0).toUpperCase() + updatedTask.priority.slice(1) : item.priority
+            };
+          }
+          return item;
+        });
+
+        showFormMessage(`Moved "${task.title}" to ${STATUS_LABELS[targetStatus]}.`, "success");
+        render();
+      } catch (error) {
+        showFormMessage(error.message || "Unable to update task status.", "error");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("task-form");
+      if (form) {
+        form.addEventListener("submit", (event) => {
+          if (editingTaskId === null) {
+            createTask(event);
+          } else {
+            saveTask(event);
+          }
+        });
+      }
+
+      const cancelButton = document.getElementById("cancel-edit-button");
+      if (cancelButton) {
+        cancelButton.addEventListener("click", () => {
+          resetForm();
+          showFormMessage("Create a task to start testing the board.", "");
+        });
+      }
+
+      const taskFilter = document.getElementById("task-filter");
+      if (taskFilter) {
+        taskFilter.addEventListener("change", (event) => {
+          currentFilter = event.target.value;
+          render();
+        });
+      }
+
+      resetForm();
+      fetchTasks();
+    });
+  </script>
+</body>
+</html>
