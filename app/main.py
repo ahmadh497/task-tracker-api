@@ -38,11 +38,40 @@ def list_tasks(
     status: TaskStatus | None = None,
     priority: TaskPriority | None = None,
 ) -> list[TaskResponse]:
+    """List tasks, optionally filtered by status and/or priority.
+
+    Args:
+        status (TaskStatus | None): If provided, only tasks with this
+            status are returned.
+        priority (TaskPriority | None): If provided, only tasks with this
+            priority are returned.
+
+    Returns:
+        list[TaskResponse]: The tasks matching the given filters, or all
+        tasks if neither filter is provided.
+
+    Example:
+        GET /tasks?status=todo&priority=high
+    """
     return storage.get_all_tasks(status=status, priority=priority)
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def get_task(task_id: int) -> TaskResponse:
+    """Retrieve a single task by its ID.
+
+    Args:
+        task_id (int): The ID of the task to retrieve.
+
+    Returns:
+        TaskResponse: The task matching the given ID.
+
+    Raises:
+        HTTPException: 404 if no task exists with the given task_id.
+
+    Example:
+        GET /tasks/1
+    """
     task = storage.get_task_by_id(task_id)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
@@ -51,11 +80,43 @@ def get_task(task_id: int) -> TaskResponse:
 
 @app.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(payload: TaskCreate) -> TaskResponse:
+    """Create a new task.
+
+    Args:
+        payload (TaskCreate): The task data to create.
+
+    Returns:
+        TaskResponse: The newly created task, including its assigned id.
+
+    Example:
+        POST /tasks
+        {"title": "Write docs", "priority": "high"}
+    """
     return storage.add_task(payload)
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def update_task(task_id: int, payload: TaskUpdate) -> TaskResponse:
+    """Partially update an existing task, including status transitions.
+
+    Args:
+        task_id (int): The ID of the task to update.
+        payload (TaskUpdate): The fields to update. Fields left unset are
+            not changed.
+
+    Returns:
+        TaskResponse: The updated task.
+
+    Raises:
+        HTTPException: 404 if no task exists with the given task_id.
+        HTTPException: 422 if payload.status equals the task's current
+            status with no other fields changed, or if the status
+            transition is not one of the allowed transitions.
+
+    Example:
+        PATCH /tasks/1
+        {"status": "in_progress"}
+    """
     existing_task = storage.get_task_by_id(task_id)
     if existing_task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -80,6 +141,20 @@ def update_task(task_id: int, payload: TaskUpdate) -> TaskResponse:
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
 def delete_task(task_id: int) -> None:
+    """Delete a task by its ID.
+
+    Args:
+        task_id (int): The ID of the task to delete.
+
+    Returns:
+        None
+
+    Raises:
+        HTTPException: 404 if no task exists with the given task_id.
+
+    Example:
+        DELETE /tasks/1
+    """
     if storage.get_task_by_id(task_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
 
@@ -88,11 +163,18 @@ def delete_task(task_id: int) -> None:
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 def get_health() -> HealthResponse:
-    """
-    Health-check endpoint.
+    """Report service health status.
 
-    Returns HTTP 200 with the current service status and a UTC timestamp.
-    Useful for verifying the server is running and reachable.
+    Args:
+        None
+
+    Returns:
+        HealthResponse: Object with status ("ok") and the current UTC
+        timestamp in ISO 8601 format.
+
+    Example:
+        GET /health
+        {"status": "ok", "timestamp": "2026-07-25T10:15:30.123456+00:00"}
     """
     return HealthResponse(
         status="ok",
