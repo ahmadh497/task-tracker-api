@@ -1,6 +1,6 @@
 # Task Tracker API
 
-An educational REST API for tracking tasks, built with Python and FastAPI using JSON file storage instead of a database. It demonstrates core backend concepts — request validation, routing, and API design — with a minimal, easy-to-read technology stack.
+An educational REST API for tracking tasks, built with Python and FastAPI using in-memory storage instead of a database. Tasks are lost when the server process restarts. It demonstrates core backend concepts including request validation, routing, status-transition rules, and API design with a minimal, easy-to-read technology stack.
 
 ## Setup
 
