@@ -66,40 +66,40 @@ This plan is grounded in the current repository. The files reviewed were `AGENTS
 
 ### Data Model
 
-- TODO: Evaluate the proposed schema split, validation, UUID, and UTC timestamp decisions.
-- TODO: Comment on the duplicate `app/models.py` and `app/models/__init__.py` concern.
+- I agree with using separate CommentCreate and CommentResponse models because it keeps server-generated fields out of client input and preserves the existing TaskResponse shape.
+- The duplicate definitions in app/models.py and app/models/__init__.py should be resolved or clearly documented before implementation because the active imports currently use the package version.
 
 ### API Routes
 
-- TODO: Evaluate the proposed endpoints, status codes, missing-task behavior, and ordering contract.
-- TODO: Note any routes that should be added or removed from the first increment.
+- POST and GET comment routes are enough for the first increment because edit and delete behavior was not part of the requested feature.
+- Before implementation, I would standardize the missing-task error detail and confirm that comments should be returned oldest first.
 
 ### Tests
 
-- TODO: Identify missing happy-path, validation, isolation, or regression cases.
-- TODO: Evaluate whether the proposed assertions are specific enough without being brittle.
+- The proposed tests cover the main success cases, validation, task isolation, and missing-task behavior well.
+- I would also add a test confirming that deleting a task removes its comments and add whitespace-only validation tests if the project decides those values should be rejected.
 
 ### Frontend Changes
 
-- TODO: Evaluate the per-card interaction, accessibility, loading, and error-state plan.
-- TODO: Suggest a better UI scope or interaction if needed.
+- I agree with loading comments inside each task card because it fits the existing board without requiring a new page or framework.
+- I would keep comments lazy-loaded when the user expands them so the first version stays simple and does not make unnecessary API requests.
 
 ### Migration or Storage Notes
 
-- TODO: Evaluate the in-memory layout, reset behavior, and task-deletion cascade.
-- TODO: Record whether the README/storage mismatch should be addressed separately.
+- The proposed dictionary keyed by task ID fits the existing in-memory storage design and is appropriate for the current course scope.
+- The README saying JSON storage while the application actually uses in-memory storage should be corrected separately because documentation should match the running implementation.
 
 ### Open Questions
 
-- TODO: Answer the open questions that must be resolved before implementation.
-- TODO: Add any product, API-contract, or governance questions omitted from this plan.
+- Before implementation I would resolve the task_id string versus integer contract, comment ordering, whitespace validation, missing-task error text, and task-deletion cascade behavior.
+- Authentication and comment ownership would also need decisions before a production version, but adding authentication is outside the current course scope.
 
 ## Generic vs Repo-Grounded Codex Comparison
 
-**Biggest difference:** TODO
+**Biggest difference:** The generic plan described the usual components of a comments feature, while the repo-grounded plan identified actual project constraints such as in-memory storage, existing FastAPI route patterns, current pytest fixtures, the single-file frontend, and the duplicate model definitions.
 
-**Plan I would hand to a teammate:** TODO
+**Plan I would hand to a teammate:** I would hand the repo-grounded plan to a teammate after resolving the open API-contract questions because it tells them which existing files and patterns the implementation should follow.
 
-**Where the generic plan was still useful:** TODO
+**Where the generic plan was still useful:** The generic plan was useful as an initial checklist for the data model, routes, tests, storage, and frontend work before examining the repository.
 
-**Where repo grounding mattered most:** TODO
+**Where repo grounding mattered most:** Repo grounding mattered most for identifying the active model location, preserving existing response shapes, following the current test fixtures, matching the in-memory storage design, and respecting the Module 5 restrictions.
