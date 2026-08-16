@@ -329,4 +329,26 @@ def test_create_task_with_more_than_five_tags_returns_422(
     )
 
     assert response.status_code == 422
-    
+
+
+def test_update_task_with_more_than_five_tags_returns_422(
+    client: TestClient,
+    created_task,
+) -> None:
+    task_id = created_task["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={
+            "tags": [
+                "tag1",
+                "tag2",
+                "tag3",
+                "tag4",
+                "tag5",
+                "tag6",
+            ],
+        },
+    )
+
+    assert response.status_code == 422

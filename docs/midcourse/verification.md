@@ -6,23 +6,22 @@ The project was verified from:
 
 `C:\Users\pc\Desktop\task-tracker-api`
 
-The pytest suite collected 33 tests. During feature work, one tag-validation test initially failed because six tags returned `201` instead of the required `422`. After correcting backend validation, the complete suite passed:
+The pytest suite collected 34 tests. During feature work, one tag-validation test initially failed because six tags returned `201` instead of the required `422`. After correcting backend validation and adding regression coverage for the five-tag limit on task updates, the complete suite passed:
 
 ```text
-33 passed
+34 passed
 ```
 
-Final Git checkpoint:
-
-```text
-On branch mid-course-project
-nothing to commit, working tree clean
-```
-
-Commit:
+Feature implementation commit:
 
 ```text
 675c472 Complete mid-course project features
+```
+
+Break-test evidence correction commit:
+
+```text
+d09c20b docs: add valid break test evidence
 ```
 
 ## Backend test results
@@ -30,12 +29,14 @@ Commit:
 Final result:
 
 ```text
-33 passed
+34 passed
 ```
 
-The suite covered health checks, task behavior, and status transitions.
+The suite covered health checks, task behavior, status transitions, due dates, and tags.
 
-The important failing case was:
+A regression test also verifies that updating a task with more than five tags is rejected with HTTP `422`.
+
+The important failing case during feature development was:
 
 ```text
 test_create_task_with_more_than_five_tags_returns_422
@@ -48,6 +49,7 @@ The backend was corrected and the full suite was rerun successfully.
 ## Manual browser checks
 
 ### Due dates
+
 - Created a task with a due date.
 - Confirmed the due date is displayed on the task card.
 - Edited a task and confirmed its due date can be changed.
@@ -55,6 +57,7 @@ The backend was corrected and the full suite was rerun successfully.
 - Confirmed completed tasks are excluded from overdue logic.
 
 ### Tags
+
 - Entered comma-separated tags.
 - Confirmed tags are trimmed and empty entries ignored.
 - Confirmed the five-tag limit is communicated.
@@ -233,11 +236,12 @@ Both break tests therefore demonstrate the required pattern: working code passes
 
 ## Final checklist
 
-- [x] Complete pytest suite passed: 33 passed
+- [x] Complete pytest suite passed: 34 passed
 - [x] Frontend integrated in `frontend/index.html`
 - [x] Due-date and overdue behavior verified
 - [x] Tags workflow verified
+- [x] Five-tag limit enforced for both task creation and task updates
 - [x] Break Test 1 completed with pass → intentional failure → restored pass evidence
 - [x] Break Test 2 completed with pass → intentional failure → restored pass evidence
 - [x] Branch is `mid-course-project`
-- [x] Working tree was restored after both temporary break tests
+- [x] Working code was restored after both temporary break tests

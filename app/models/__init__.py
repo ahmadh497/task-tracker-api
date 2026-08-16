@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum
-from typing import Optional
-
-from typing import Annotated
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field
 
@@ -55,7 +53,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     due_date: Optional[date] = None
-    tags: Optional[list[str]] = None
+    tags: Annotated[Optional[list[str]], Field(max_length=5)] = None
 
 
 class TaskResponse(BaseModel):
