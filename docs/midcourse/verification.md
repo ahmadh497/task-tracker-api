@@ -74,34 +74,162 @@ The backend was corrected and the full suite was rerun successfully.
 
 ## Break-test evidence
 
-### Break Test 1 — More than five tags
+A break test starts from working code with a passing test, temporarily introduces a regression, confirms that the same test fails, then restores the working code and confirms that the test passes again. The temporary broken changes below were not committed.
 
-Input:
+### Break Test 1 — Five-tag validation
 
-```text
-tag1, tag2, tag3, tag4, tag5, tag6
-```
-
-Required result: `422`.
-
-The test initially caught the defect:
+Test used:
 
 ```text
-assert response.status_code == 422
-E assert 201 == 422
+tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422
 ```
 
-After validation was added, the test passed as part of the final `33 passed` suite.
+#### 1. Working code — test passes
 
-### Break Test 2 — Invalid status transition
+With the normal five-tag validation in place, I ran:
 
-The existing status-transition tests protect the workflow from arbitrary status jumps. The frontend checks `VALID_TRANSITIONS` before sending a move request, and the backend transition tests provide regression protection.
+```powershell
+python -m pytest tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422 -v
+```
 
-Relevant test file:
+Result:
 
 ```text
-tests/test_task_status_transitions.py
+tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422 PASSED [100%]
+
+1 passed in 0.03s
 ```
+
+#### 2. Temporary break
+
+The working model contained:
+
+```python
+tags: Annotated[list[str], Field(max_length=5)] = Field(default_factory=list)
+```
+
+I temporarily removed the maximum-count validation:
+
+```python
+tags: list[str] = Field(default_factory=list)
+```
+
+This temporary change was not committed.
+
+#### 3. Same test against broken code — test fails
+
+I reran the exact same pytest test.
+
+Result:
+
+```text
+tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422 FAILED [100%]
+
+>       assert response.status_code == 422
+E       assert 201 == 422
+E        +  where 201 = <Response [201 Created]>.status_code
+
+FAILED tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422 - assert 201 == 422
+1 failed in 0.22s
+```
+
+This shows that the test detects a regression where more than five tags are incorrectly accepted.
+
+#### 4. Restore working code — test passes again
+
+I restored `app/models/__init__.py` with:
+
+```powershell
+git restore app/models/__init__.py
+```
+
+Then I reran the same test.
+
+Result:
+
+```text
+tests/test_tasks.py::test_create_task_with_more_than_five_tags_returns_422 PASSED [100%]
+
+1 passed in 0.04s
+```
+
+### Break Test 2 — Due-date persistence
+
+Test used:
+
+```text
+tests/test_tasks.py::test_create_task_with_due_date_returns_201
+```
+
+#### 1. Working code — test passes
+
+With the normal due-date persistence behavior in place, I ran:
+
+```powershell
+python -m pytest tests/test_tasks.py::test_create_task_with_due_date_returns_201 -v
+```
+
+Result:
+
+```text
+tests/test_tasks.py::test_create_task_with_due_date_returns_201 PASSED [100%]
+
+1 passed in 0.03s
+```
+
+#### 2. Temporary break
+
+The working storage code contained:
+
+```python
+due_date=payload.due_date,
+```
+
+I temporarily changed it to:
+
+```python
+due_date=None,
+```
+
+This intentionally caused newly created tasks to lose their supplied due date. The temporary change was not committed.
+
+#### 3. Same test against broken code — test fails
+
+I reran the exact same pytest test.
+
+Result:
+
+```text
+tests/test_tasks.py::test_create_task_with_due_date_returns_201 FAILED [100%]
+
+>       assert body["due_date"] == "2026-08-15"
+E       AssertionError: assert None == '2026-08-15'
+
+FAILED tests/test_tasks.py::test_create_task_with_due_date_returns_201 - AssertionError: assert None == '2026-08-15'
+1 failed in 0.25s
+```
+
+This shows that the test detects a regression where the API accepts a due date but fails to preserve it in the created task.
+
+#### 4. Restore working code — test passes again
+
+I restored `app/storage.py` with:
+
+```powershell
+git restore app/storage.py
+```
+
+Then I reran the same test.
+
+Result:
+
+```text
+tests/test_tasks.py::test_create_task_with_due_date_returns_201 PASSED [100%]
+
+1 passed in 0.05s
+```
+
+Both break tests therefore demonstrate the required pattern: working code passes, a temporary intentional regression makes the same test fail, and restoring the working code makes the test pass again.
 
 ## Final checklist
 
@@ -109,8 +237,7 @@ tests/test_task_status_transitions.py
 - [x] Frontend integrated in `frontend/index.html`
 - [x] Due-date and overdue behavior verified
 - [x] Tags workflow verified
-- [x] Five-tag break case fixed
-- [x] Status-transition regression checks passed
+- [x] Break Test 1 completed with pass → intentional failure → restored pass evidence
+- [x] Break Test 2 completed with pass → intentional failure → restored pass evidence
 - [x] Branch is `mid-course-project`
-- [x] Working tree is clean
-- [x] Final commit exists: `675c472`
+- [x] Working tree was restored after both temporary break tests
